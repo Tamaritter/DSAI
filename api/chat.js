@@ -12,18 +12,34 @@ export default async function handler(request, response) {
 
     try {
         // 1. Hole den geheimen API-Schlüssel aus den Vercel Environment Variables
-        //    ACHTUNG: Der Name der Variable wurde geändert!
         const apiKey = process.env.GEMINI_API_KEY;
-        const systemPrompt = process.env.SYSTEM_PROMPT;
+        
+        // --- START: MODIFIED FOR GAMBLER AI ---
+        // Get the LIST of prompts instead of just one
+        const promptsEnv = process.env.SYSTEM_PROMPTS; 
+        // --- END: MODIFIED FOR GAMBLER AI ---
 
         if (!apiKey) {
             console.error("Gemini API key is not set in environment variables.");
             return response.status(500).json({ error: "API key is not configured." });
         }
-        if (!systemPrompt) { // <-- NEU: Prüfe den Prompt
-        console.error("SYSTEM_PROMPT is not set in environment variables.");
-        return response.status(500).json({ error: "System prompt is not configured." });
+        
+        // --- START: MODIFIED FOR GAMBLER AI ---
+        // Check for the new plural env var
+        if (!promptsEnv) { 
+            console.error("SYSTEM_PROMPTS is not set in environment variables.");
+            return response.status(500).json({ error: "System prompts are not configured. Set SYSTEM_PROMPTS." });
         }
+
+        // "Gamble" for a prompt
+        // 1. Split the string into an array
+        const allPrompts = promptsEnv.split('||');
+        // 2. Pick a random index
+        const randomIndex = Math.floor(Math.random() * allPrompts.length);
+        // 3. Select the winning prompt
+        const systemPrompt = allPrompts[randomIndex].trim();
+        // --- END: MODIFIED FOR GAMBLER AI ---
+
 
         // 2. Hole die Chat-Historie aus der Anfrage des Frontends
         const { messages } = request.body;
@@ -33,8 +49,6 @@ export default async function handler(request, response) {
         }
 
         // 3. Bereite die Anfrage an Gemini vor
-        //    Wir wandeln das OpenAI-Format ('role: assistant', 'content: ...')
-        //    in das Gemini-Format ('role: model', 'parts: [{ text: ... }]') um.
         const geminiContents = messages.map(msg => {
             return {
                 role: msg.role === 'assistant' ? 'model' : 'user', // Wandle 'assistant' zu 'model' um
@@ -43,13 +57,15 @@ export default async function handler(request, response) {
         });
         
         // Entferne die ersten Nachrichten, wenn sie die Standard-Begrüßung sind
-        // (da das Frontend diese schon anzeigt)
-        const contentsPayload = geminiContents.slice(2); 
+        const contentsPayload = geminiContents.slice(2);  
 
         const payload = {
             contents: contentsPayload,
             systemInstruction: {
-                parts: [{ text: systemPrompt }],
+                // --- MODIFIED ---
+                // Use the randomly chosen prompt
+                parts: [{ text: systemPrompt }], 
+                // --- END MODIFIED ---
             },
             generationConfig: {
                 temperature: 0.7,
@@ -57,7 +73,6 @@ export default async function handler(request, response) {
         };
 
         // 4. Rufe die Gemini-API sicher vom Server aus auf
-        //    Der API-Schlüssel wird als URL-Parameter übergeben
         const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
             method: 'POST',
             headers: {
@@ -80,7 +95,6 @@ export default async function handler(request, response) {
         }
 
         // 5. Sende die reine Text-Antwort zurück an das Frontend
-        //    (Das Frontend erwartet { message: "..." })
         return response.status(200).json({ message: aiMessage });
 
     } catch (error) {
