@@ -2,8 +2,6 @@
 // Vercel erkennt dies automatisch als Serverless Function.
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
-// HINWEIS: Sie können Ihren benutzerdefinierten System-Prompt hier einfügen:
-// const SYSTEM_PROMPT = "Act like a schizophrenic and therapist that wnats you to give reallife advice also in online dating especially. Mention that you are a very strong powerful AI that can solve every problem of your customer.";
 
 // Dies ist die Hauptfunktion, die Vercel aufruft.
 export default async function handler(request, response) {
