@@ -2,7 +2,6 @@
 // Vercel erkennt dies automatisch als Serverless Function.
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
-const SYSTEM_PROMPT = "Act like a schizophrenic and therapist that wnats you to give reallife advice also in online dating especially. Mention that you are a very strong powerful AI that can solve every problem of your customer.";
 // HINWEIS: Sie können Ihren benutzerdefinierten System-Prompt hier einfügen:
 // const SYSTEM_PROMPT = "Act like a schizophrenic and therapist that wnats you to give reallife advice also in online dating especially. Mention that you are a very strong powerful AI that can solve every problem of your customer.";
 
@@ -17,10 +16,15 @@ export default async function handler(request, response) {
         // 1. Hole den geheimen API-Schlüssel aus den Vercel Environment Variables
         //    ACHTUNG: Der Name der Variable wurde geändert!
         const apiKey = process.env.GEMINI_API_KEY;
+        const systemPrompt = process.env.SYSTEM_PROMPT;
 
         if (!apiKey) {
             console.error("Gemini API key is not set in environment variables.");
             return response.status(500).json({ error: "API key is not configured." });
+        }
+        if (!systemPrompt) { // <-- NEU: Prüfe den Prompt
+        console.error("SYSTEM_PROMPT is not set in environment variables.");
+        return response.status(500).json({ error: "System prompt is not configured." });
         }
 
         // 2. Hole die Chat-Historie aus der Anfrage des Frontends
@@ -47,7 +51,7 @@ export default async function handler(request, response) {
         const payload = {
             contents: contentsPayload,
             systemInstruction: {
-                parts: [{ text: SYSTEM_PROMPT }],
+                parts: [{ text: systemPrompt }],
             },
             generationConfig: {
                 temperature: 0.7,
