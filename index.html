@@ -47,10 +47,10 @@
             
             </main>
 
-        <div id="loading-indicator" class="p-4 text-center text-sm text-gray-400 hidden">
-            <p>AI is thinking...</p>
+        <div id="loading-indicator" class="p-4 flex justify-center items-center space-x-2 text-sm text-gray-400 hidden">
+            <div id="gamble-spinner" class="text-2xl">🎰</div>
+            <p>Gambling for a personality...</p>
         </div>
-
         <footer class="p-4 bg-gray-800 border-t border-gray-700">
             <form id="chat-form" class="flex items-center space-x-2">
                 <input 
@@ -110,19 +110,16 @@
             const chatMessages = document.getElementById('chat-messages');
             const loadingIndicator = document.getElementById('loading-indicator');
 
+            // --- START: MODIFIED FOR GAMBLER AI ---
+            const gambleSpinner = document.getElementById('gamble-spinner');
+            const gambleEmojis = ['🎰', '🎲', '🃏', '💰', '👑', '🍀', '🍒'];
+            let gambleInterval = null;
+            // --- END: MODIFIED FOR GAMBLER AI ---
+
             // --- API Configuration ---
-            // KEIN API-Schlüssel hier! Wir rufen unsere eigene Serverless-Funktion auf.
-            const API_URL = "/api/chat"; // <-- GEÄNDERT: Ruft unsere Backend-Funktion auf
+            const API_URL = "/api/chat"; // Ruft unsere Backend-Funktion auf
             
-            // HINWEIS: Der System-Prompt befindet sich jetzt in /api/chat.js
-            // const SYSTEM_PROMPT = "..."; // Dieser wird hier nicht mehr benötigt.
-            
-            // We'll store the chat history in memory for this simple example
-            // OpenAI format uses "role" and "content"
             let chatHistory = [
-                // Wir starten die Historie hier leer,
-                // da das Backend den System-Prompt hinzufügt.
-                // Die Begrüßungsnachricht ist im HTML hardcodiert.
                 // { role: "system", content: SYSTEM_PROMPT }, // Nicht mehr nötig
                 { role: "user", content: "Hello" },
                 { role: "assistant", content: "Hello! How can I help you today?" }
@@ -135,21 +132,16 @@
                 
                 if (!message) return; // Don't send empty messages
 
-                // Add user message to chat
                 addMessageToChat('user', message);
                 messageInput.value = ''; // Clear input
 
-                // Add to history
                 chatHistory.push({ role: "user", content: message }); 
 
-                // Get AI response
                 getAiResponse();
             });
 
             /**
              * Adds a message to the chat UI.
-             * @param {string} sender - 'user', 'ai', or 'error'
-             * @param {string} message - The text content
              */
             function addMessageToChat(sender, message) {
                 const bubble = document.createElement('div');
@@ -159,7 +151,10 @@
                     bubble.innerHTML = `<p>${escapeHTML(message)}</p>`;
                 } else if (sender === 'ai') {
                     bubble.className = 'chat-bubble-ai';
-                    bubble.innerHTML = `<p class="font-semibold">AI Assistant</p><p>${escapeHTML(message)}</p>`;
+                    // --- MODIFIED ---
+                    // Changed title to DSAI to match your header
+                    bubble.innerHTML = `<p class="font-semibold">DSAI</p><p>${escapeHTML(message)}</p>`;
+                    // --- END MODIFIED ---
                 } else { // 'error'
                     bubble.className = 'chat-bubble-error';
                     bubble.innerHTML = `<p class="font-semibold">Error</p><p>${escapeHTML(message)}</p>`;
@@ -167,7 +162,6 @@
                 
                 chatMessages.appendChild(bubble);
                 
-                // Scroll to bottom
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }
 
@@ -176,22 +170,27 @@
              */
             async function getAiResponse() {
                 loadingIndicator.classList.remove('hidden');
+
+                // --- START: MODIFIED FOR GAMBLER AI ---
+                // Start the gamble animation
+                if (gambleInterval) clearInterval(gambleInterval); // Clear any old one
+                let emojiIndex = 0;
+                gambleInterval = setInterval(() => {
+                    emojiIndex = (emojiIndex + 1) % gambleEmojis.length;
+                    gambleSpinner.textContent = gambleEmojis[emojiIndex];
+                }, 100); // Spin speed
+                // --- END: MODIFIED FOR GAMBLER AI ---
+
                 
-                // --- Payload for our backend ---
-                // Wir senden nur die Chat-Historie.
                 const payload = {
-                    // Wir senden die Historie, die wir lokal pflegen
                     messages: chatHistory
                 };
-                // --- End Payload ---
 
                 try {
-                    // Call our OWN API with exponential backoff
                     const response = await fetchWithBackoff(API_URL, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            // KEINE Authorization hier! Das macht unser Backend.
                         },
                         body: JSON.stringify(payload),
                     });
@@ -203,12 +202,9 @@
 
                     const result = await response.json();
                     
-                    // --- Our backend sends back the AI message ---
                     const aiMessage = result.message;
-                    // --- End Response Parsing ---
 
                     if (aiMessage) {
-                        // Add AI message to chat and history
                         addMessageToChat('ai', aiMessage);
                         chatHistory.push({ role: "assistant", content: aiMessage }); 
                     } else {
@@ -220,16 +216,22 @@
                     addMessageToChat('error', `Sorry, I couldn't get a response. ${error.message}`);
                 } finally {
                     loadingIndicator.classList.add('hidden');
+                    
+                    // --- START: MODIFIED FOR GAMBLER AI ---
+                    // Stop the gamble animation
+                    if (gambleInterval) {
+                        clearInterval(gambleInterval);
+                        gambleInterval = null;
+                    }
+                    gambleSpinner.textContent = '🎰'; // Reset to default
+                    // --- END: MODIFIED FOR GAMBLER AI ---
+                    
                     messageInput.focus(); // Re-focus the input
                 }
             }
             
             /**
              * Implements exponential backoff for fetch requests.
-             * @param {string} url - The URL to fetch.
-             * @param {object} options - The fetch options.
-             * @param {number} maxRetries - Maximum number of retries.
-             * @param {number} baseDelay - Initial delay in ms.
              */
             async function fetchWithBackoff(url, options, maxRetries = 3, baseDelay = 1000) {
                 let attempt = 0;
@@ -237,7 +239,6 @@
                     try {
                         const response = await fetch(url, options);
                         if (response.status === 429 || response.status >= 500) {
-                            // Throttling or server error, so we retry
                             throw new Error(`Retryable error: ${response.status}`);
                         }
                         return response; // Success
@@ -247,7 +248,6 @@
                             throw error; // Max retries reached
                         }
                         const delay = baseDelay * Math.pow(2, attempt - 1) + (Math.random() * 1000);
-                        // Do not log retry attempts to the console as errors
                         await new Promise(resolve => setTimeout(resolve, delay));
                     }
                 }
@@ -255,7 +255,6 @@
 
             /**
              * Helper function to escape HTML to prevent XSS.
-             * @param {string} str - The string to escape.
              */
             function escapeHTML(str) {
                 return str.replace(/[&<>"']/g, function(m) {
