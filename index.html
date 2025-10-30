@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple AI Chatbot</title>
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Simple scrollbar for chat */
+        #chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        #chat-messages::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 3px;
+        }
+        #chat-messages::-webkit-scrollbar-track {
+            background-color: #f1f5f9;
+        }
+    </style>
+</head>
+<body class="font-sans bg-slate-100 h-full flex justify-center items-center">
+
+    <!-- Chatbot Container -->
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg h-full sm:h-[90vh] flex flex-col overflow-hidden">
+        
+        <!-- Header -->
+        <header class="bg-blue-600 text-white p-4 flex items-center justify-center">
+            <h1 class="text-xl font-semibold">My AI Chatbot</h1>
+        </header>
+
+        <!-- Chat Messages Area -->
+        <main id="chat-messages" class="flex-1 p-4 space-y-4 overflow-y-auto bg-slate-50">
+            <!-- Initial AI Message -->
+            <div class="chat-bubble-ai">
+                <p class="font-semibold">AI Assistant</p>
+                <p>Hello! How can I help you today?</p>
+            </div>
+            
+            <!-- Messages will be added here by JavaScript -->
+            
+        </main>
+
+        <!-- "AI is thinking..." Indicator -->
+        <div id="loading-indicator" class="p-4 text-center text-sm text-slate-500 hidden">
+            <p>AI is thinking...</p>
+        </div>
+
+        <!-- Input Form -->
+        <footer class="p-4 bg-white border-t border-slate-200">
+            <form id="chat-form" class="flex items-center space-x-2">
+                <input 
+                    type="text" 
+                    id="message-input"
+                    placeholder="Type your message..."
+                    autocomplete="off"
+                    class="flex-1 px-4 py-2 border border-slate-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                <button 
+                    type="submit"
+                    class="bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    aria-label="Send message"
+                >
+                    <!-- Send Icon (SVG) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                        <path d="M3.105 3.105a.75.75 0 01.056 1.057l4.104 4.105-4.104 4.104a.75.75 0 01-1.113-1.057l4.104-4.105-4.104-4.104a.75.75 0 011.057-.056zM6.25 12a.75.75 0 01.75-.75h8.5a.75.75 0 010 1.5h-8.5a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </form>
+        </footer>
+    </div>
+
+    <!-- 2. Custom CSS for Chat Bubbles -->
+    <style>
+        .chat-bubble-user {
+            background-color: #dbeafe; /* blue-100 */
+            color: #1e3a8a; /* blue-900 */
+            padding: 0.75rem; /* p-3 */
+            border-radius: 1rem 1rem 0.25rem 1rem; /* rounded-lg rounded-bl-sm */
+            max-width: 80%;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .chat-bubble-ai {
+            background-color: #f1f5f9; /* slate-100 */
+            color: #1e293b; /* slate-800 */
+            padding: 0.75rem; /* p-3 */
+            border-radius: 1rem 1rem 1rem 0.25rem; /* rounded-lg rounded-br-sm */
+            max-width: 80%;
+            align-self: flex-start;
+            margin-right: auto;
+        }
+        .chat-bubble-error {
+            background-color: #fee2e2; /* red-100 */
+            color: #991b1b; /* red-800 */
+            padding: 0.75rem; /* p-3 */
+            border-radius: 1rem 1rem 1rem 0.25rem; /* rounded-lg rounded-br-sm */
+            max-width: 80%;
+            align-self: flex-start;
+            margin-right: auto;
+        }
+    </style>
+
+    <!-- 3. JavaScript Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatForm = document.getElementById('chat-form');
+            const messageInput = document.getElementById('message-input');
+            const chatMessages = document.getElementById('chat-messages');
+            const loadingIndicator = document.getElementById('loading-indicator');
+
+            // --- API Configuration ---
+            // KEIN API-Schlüssel hier! Wir rufen unsere eigene Serverless-Funktion auf.
+            const API_URL = "/api/chat"; // <-- GEÄNDERT: Ruft unsere Backend-Funktion auf
+            
+            // HINWEIS: Der System-Prompt befindet sich jetzt in /api/chat.js
+            // const SYSTEM_PROMPT = "..."; // Dieser wird hier nicht mehr benötigt.
+            
+            // We'll store the chat history in memory for this simple example
+            // OpenAI format uses "role" and "content"
+            let chatHistory = [
+                // Wir starten die Historie hier leer,
+                // da das Backend den System-Prompt hinzufügt.
+                // Die Begrüßungsnachricht ist im HTML hardcodiert.
+                // { role: "system", content: SYSTEM_PROMPT }, // Nicht mehr nötig
+                { role: "user", content: "Hello" },
+                { role: "assistant", content: "Hello! How can I help you today?" }
+            ];
+
+            // Handle form submission
+            chatForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const message = messageInput.value.trim();
+                
+                if (!message) return; // Don't send empty messages
+
+                // Add user message to chat
+                addMessageToChat('user', message);
+                messageInput.value = ''; // Clear input
+
+                // Add to history
+                chatHistory.push({ role: "user", content: message }); 
+
+                // Get AI response
+                getAiResponse();
+            });
+
+            /**
+             * Adds a message to the chat UI.
+             * @param {string} sender - 'user', 'ai', or 'error'
+             * @param {string} message - The text content
+             */
+            function addMessageToChat(sender, message) {
+                const bubble = document.createElement('div');
+                
+                if (sender === 'user') {
+                    bubble.className = 'chat-bubble-user';
+                    bubble.innerHTML = `<p>${escapeHTML(message)}</p>`;
+                } else if (sender === 'ai') {
+                    bubble.className = 'chat-bubble-ai';
+                    bubble.innerHTML = `<p class="font-semibold">AI Assistant</p><p>${escapeHTML(message)}</p>`;
+                } else { // 'error'
+                    bubble.className = 'chat-bubble-error';
+                    bubble.innerHTML = `<p class="font-semibold">Error</p><p>${escapeHTML(message)}</p>`;
+                }
+                
+                chatMessages.appendChild(bubble);
+                
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            /**
+             * Fetches a response from our OWN backend API (/api/chat).
+             */
+            async function getAiResponse() {
+                loadingIndicator.classList.remove('hidden');
+                
+                // --- Payload for our backend ---
+                // Wir senden nur die Chat-Historie.
+                const payload = {
+                    // Wir senden die Historie, die wir lokal pflegen
+                    messages: chatHistory
+                };
+                // --- End Payload ---
+
+                try {
+                    // Call our OWN API with exponential backoff
+                    const response = await fetchWithBackoff(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            // KEINE Authorization hier! Das macht unser Backend.
+                        },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'API request failed');
+                    }
+
+                    const result = await response.json();
+                    
+                    // --- Our backend sends back the AI message ---
+                    const aiMessage = result.message;
+                    // --- End Response Parsing ---
+
+                    if (aiMessage) {
+                        // Add AI message to chat and history
+                        addMessageToChat('ai', aiMessage);
+                        chatHistory.push({ role: "assistant", content: aiMessage }); 
+                    } else {
+                        throw new Error("Invalid response structure from API.");
+                    }
+
+                } catch (error) {
+                    console.error("Error fetching AI response:", error);
+                    addMessageToChat('error', `Sorry, I couldn't get a response. ${error.message}`);
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                    messageInput.focus(); // Re-focus the input
+                }
+            }
+            
+            /**
+             * Implements exponential backoff for fetch requests.
+             * @param {string} url - The URL to fetch.
+             * @param {object} options - The fetch options.
+             * @param {number} maxRetries - Maximum number of retries.
+             * @param {number} baseDelay - Initial delay in ms.
+             */
+            async function fetchWithBackoff(url, options, maxRetries = 3, baseDelay = 1000) {
+                let attempt = 0;
+                while (attempt < maxRetries) {
+                    try {
+                        const response = await fetch(url, options);
+                        if (response.status === 429 || response.status >= 500) {
+                            // Throttling or server error, so we retry
+                            throw new Error(`Retryable error: ${response.status}`);
+                        }
+                        return response; // Success
+                    } catch (error) {
+                        attempt++;
+                        if (attempt >= maxRetries) {
+                            throw error; // Max retries reached
+                        }
+                        const delay = baseDelay * Math.pow(2, attempt - 1) + (Math.random() * 1000);
+                        // Do not log retry attempts to the console as errors
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+            }
+
+            /**
+             * Helper function to escape HTML to prevent XSS.
+             * @param {string} str - The string to escape.
+             */
+            function escapeHTML(str) {
+                return str.replace(/[&<>"']/g, function(m) {
+                    return {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#39;'
+                    }[m];
+                });
+            }
+
+        });
+    </script>
+
+</body>
+</html>

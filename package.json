@@ -1,0 +1,7 @@
+{
+  "name": "vercel-secure-chatbot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Secure chatbot for Vercel deployment"
+}
