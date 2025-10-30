@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SUPER DAVID AI</title>
-    <!-- 1. Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -18,76 +17,66 @@
         }
     </script>
     <style>
-        /* Simple scrollbar for chat */
+        /* Simple scrollbar for chat (Dark Mode) */
         #chat-messages::-webkit-scrollbar {
             width: 6px;
         }
         #chat-messages::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1;
+            background-color: #4b5563; /* gray-600 */
             border-radius: 3px;
         }
         #chat-messages::-webkit-scrollbar-track {
-            background-color: #f1f5f9;
+            background-color: #374151; /* gray-700 */
         }
     </style>
 </head>
-<body class="font-sans bg-slate-100 h-full flex justify-center items-center">
+<body class="font-sans bg-gray-900 h-full flex justify-center items-center">
 
-    <!-- Chatbot Container -->
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg h-full sm:h-[90vh] flex flex-col overflow-hidden">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg h-full sm:h-[90vh] flex flex-col overflow-hidden">
         
-        <!-- Header -->
-        <header class="bg-blue-600 text-white p-4 flex items-center justify-center">
-            <h1 class="text-xl font-semibold">DSAI - David Super AI</h1> <br>
+        <header class="bg-blue-700 text-white p-4 text-center shadow-md">
+            <p class="text-xs text-blue-200 mb-2">Es gibt nur eine KI Version, damit sie nicht den Fehler machen und die Falsche auswählen.</p>
+            <h1 class="text-xl font-semibold">DSAI - David Super AI</h1>
         </header>
 
-        <!-- Chat Messages Area -->
-        <main id="chat-messages" class="flex-1 p-4 space-y-4 overflow-y-auto bg-slate-50">
-            <!-- Initial AI Message -->
-            <p class="font-semibold">Eine KI für alles!</p>
+        <main id="chat-messages" class="flex-1 p-4 space-y-4 overflow-y-auto bg-gray-700">
             <div class="chat-bubble-ai">
                 <p class="font-semibold">AI Assistant</p>
                 <p>Hello! How can I help you today?</p>
             </div>
             
-            <!-- Messages will be added here by JavaScript -->
-            
-        </main>
+            </main>
 
-        <!-- "AI is thinking..." Indicator -->
-        <div id="loading-indicator" class="p-4 text-center text-sm text-slate-500 hidden">
+        <div id="loading-indicator" class="p-4 text-center text-sm text-gray-400 hidden">
             <p>AI is thinking...</p>
         </div>
 
-        <!-- Input Form -->
-        <footer class="p-4 bg-white border-t border-slate-200">
+        <footer class="p-4 bg-gray-800 border-t border-gray-700">
             <form id="chat-form" class="flex items-center space-x-2">
                 <input 
                     type="text" 
                     id="message-input"
                     placeholder="Type your message..."
                     autocomplete="off"
-                    class="flex-1 px-4 py-2 border border-slate-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    class="flex-1 px-4 py-2 bg-gray-600 border border-gray-500 text-white placeholder-gray-400 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-gray-500"
                 >
                 <button 
                     type="submit"
                     class="bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                     aria-label="Send message"
                 >
-                    <!-- Send Icon (SVG) -->
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                        <path d="M3.105 3.105a.75.75 0 01.056 1.057l4.104 4.105-4.104 4.104a.75.75 0 01-1.113-1.057l4.104-4.105-4.104-4.104a.75.75 0 011.057-.056zM6.25 12a.75.75 0 01.75-.75h8.5a.75.75 0 010 1.5h-8.5a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
+                        <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0015.343-8.85.75.75 0 000-1.094A60.519 60.519 0 003.478 2.405z" />
                     </svg>
                 </button>
             </form>
         </footer>
     </div>
 
-    <!-- 2. Custom CSS for Chat Bubbles -->
     <style>
         .chat-bubble-user {
-            background-color: #dbeafe; /* blue-100 */
-            color: #1e3a8a; /* blue-900 */
+            background-color: #2563eb; /* blue-600 */
+            color: #ffffff; /* white */
             padding: 0.75rem; /* p-3 */
             border-radius: 1rem 1rem 0.25rem 1rem; /* rounded-lg rounded-bl-sm */
             max-width: 80%;
@@ -95,8 +84,8 @@
             margin-left: auto;
         }
         .chat-bubble-ai {
-            background-color: #f1f5f9; /* slate-100 */
-            color: #1e293b; /* slate-800 */
+            background-color: #4b5563; /* gray-600 */
+            color: #f3f4f6; /* gray-100 */
             padding: 0.75rem; /* p-3 */
             border-radius: 1rem 1rem 1rem 0.25rem; /* rounded-lg rounded-br-sm */
             max-width: 80%;
@@ -104,8 +93,8 @@
             margin-right: auto;
         }
         .chat-bubble-error {
-            background-color: #fee2e2; /* red-100 */
-            color: #991b1b; /* red-800 */
+            background-color: #b91c1c; /* red-700 */
+            color: #ffffff; /* white */
             padding: 0.75rem; /* p-3 */
             border-radius: 1rem 1rem 1rem 0.25rem; /* rounded-lg rounded-br-sm */
             max-width: 80%;
@@ -114,7 +103,6 @@
         }
     </style>
 
-    <!-- 3. JavaScript Logic -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const chatForm = document.getElementById('chat-form');
