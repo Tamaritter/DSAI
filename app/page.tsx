@@ -18,8 +18,8 @@ export default function HomePage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    async function handleSubmit(e: FormEvent) {
-        e.preventDefault();
+    async function handleSubmit(e: FormEvent | KeyboardEvent) {
+        e.preventDefault?.();
         if (!input.trim() || loading) return;
 
         const newMessage: ChatMessage = {
@@ -63,23 +63,28 @@ export default function HomePage() {
         }
     }
 
+    // ENTER = senden, SHIFT+ENTER = neue Zeile
+    function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit(e as any);
+        }
+    }
+
     function handlePersonalityChange(p: Personality) {
         if (loading) return;
         setPersonality(p);
-        // Optional: Chat leeren beim Wechsel
-        // setMessages([]);
     }
 
     return (
-        <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
-            {/* Hintergrund-Gradient + Glow */}
+        <main className="relative flex min-h-screen flex-col items-center justify-start overflow-hidden px-4 py-10">
+            {/* Hintergrund */}
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.35),_transparent_60%),radial-gradient(circle_at_bottom,_rgba(168,85,247,0.45),_transparent_60%)]" />
             <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-3xl" />
 
-            {/* Layout-Container als Grid statt flex */}
-            <div className="relative z-10 mx-auto grid w-full max-w-6xl gap-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-start">
-                {/* Linke Seite: Hero / Info */}
-                <section className="flex flex-col justify-between gap-6">
+            <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-10">
+                {/* HERO */}
+                <section className="flex flex-col gap-6">
                     <div>
                         <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-slate-900/70 px-3 py-1 text-xs font-medium text-cyan-200">
                             <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -95,26 +100,19 @@ export default function HomePage() {
                             direkt im Browser.
                         </h1>
 
-                        <p className="max-w-xl text-sm text-slate-300 sm:text-base">
+                        <p className="max-w-2xl text-sm text-slate-300 sm:text-base">
                             Wechsle zwischen{" "}
-                            <span className="font-semibold text-cyan-300">
-                Allround-Chat
-              </span>
-                            ,{" "}
+                            <span className="font-semibold text-cyan-300">Allround</span>,{" "}
                             <span className="font-semibold text-emerald-300">David</span> und{" "}
-                            <span className="font-semibold text-violet-300">
-                Code-Experte
-              </span>
+                            <span className="font-semibold text-violet-300">Ardy</span>.
                         </p>
                     </div>
 
-                    <div className="mt-4 space-y-2 text-xs text-slate-400">
-                        <p className="font-medium text-slate-300">
-                            Wähle deine Persönlichkeit:
-                        </p>
+                    <div className="mt-2 space-y-2 text-xs text-slate-400">
+                        <p className="font-medium text-slate-300">Wähle deine Persönlichkeit:</p>
+
                         <div className="inline-flex flex-wrap gap-2">
                             <button
-                                type="button"
                                 onClick={() => handlePersonalityChange("default")}
                                 className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                                     personality === "default"
@@ -124,8 +122,8 @@ export default function HomePage() {
                             >
                                 🧠 Allround
                             </button>
+
                             <button
-                                type="button"
                                 onClick={() => handlePersonalityChange("david")}
                                 className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                                     personality === "david"
@@ -135,8 +133,8 @@ export default function HomePage() {
                             >
                                 💬 David
                             </button>
+
                             <button
-                                type="button"
                                 onClick={() => handlePersonalityChange("ardy")}
                                 className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                                     personality === "ardy"
@@ -150,15 +148,16 @@ export default function HomePage() {
                     </div>
                 </section>
 
-                {/* Rechte Seite: Chat Card */}
+                {/* CHAT */}
                 <section className="flex">
-                    <div className="flex h-[520px] w-full flex-col overflow-hidden rounded-3xl border border-slate-800/80 bg-slate-900/70 shadow-2xl shadow-slate-950/80 backdrop-blur-xl">
+                    <div className="flex h-[560px] w-full flex-col overflow-hidden rounded-3xl border border-slate-800/80 bg-slate-900/70 shadow-2xl shadow-slate-950/80 backdrop-blur-xl">
                         {/* Header */}
                         <div className="flex items-center justify-between border-b border-slate-800/80 px-4 py-3">
                             <div className="flex items-center gap-2">
                                 <div className="h-2 w-2 rounded-full bg-emerald-400" />
                                 <p className="text-xs font-medium text-slate-200">DSAI · Chat</p>
                             </div>
+
                             <span className="rounded-full bg-slate-800 px-2 py-1 text-[10px] uppercase tracking-wide text-slate-400">
                 Beta
               </span>
@@ -173,10 +172,8 @@ export default function HomePage() {
                                     </p>
                                     <ul className="list-inside list-disc space-y-1">
                                         <li>Frag nach Hilfe bei deinem Studium oder Code.</li>
-                                        <li>Lass dich vom Coach motivieren oder reflektieren.</li>
-                                        <li>
-                                            Nutze den Coder-Modus für konkrete Implementierungen.
-                                        </li>
+                                        <li>David hilft beim Reflektieren.</li>
+                                        <li>Ardy liefert konkrete Implementierungen.</li>
                                     </ul>
                                 </div>
                             )}
@@ -186,9 +183,7 @@ export default function HomePage() {
                                 return (
                                     <div
                                         key={index}
-                                        className={`flex w-full ${
-                                            isUser ? "justify-end" : "justify-start"
-                                        }`}
+                                        className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}
                                     >
                                         <div
                                             className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs sm:text-sm ${
@@ -230,9 +225,11 @@ export default function HomePage() {
                     rows={1}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Schreibe eine Nachricht..."
+                    onKeyDown={handleKeyDown}
+                    placeholder="Schreibe eine Nachricht…"
                     className="max-h-32 flex-1 resize-none rounded-2xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-sm text-slate-100 outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/40"
                 />
+
                                 <button
                                     type="submit"
                                     disabled={loading || !input.trim()}
