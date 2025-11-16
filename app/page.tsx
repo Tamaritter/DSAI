@@ -34,7 +34,7 @@ export default function HomePage() {
         setLoading(true);
 
         try {
-            const res = await fetch("/api/chat", {
+            const res = await fetch("/api", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
