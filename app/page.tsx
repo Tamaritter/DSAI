@@ -1,65 +1,264 @@
-import Image from "next/image";
+// app/page.tsx
+"use client";
 
-export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+import { FormEvent, useState } from "react";
+
+type Role = "user" | "assistant";
+type Personality = "default" | "david" | "ardy";
+
+type ChatMessage = {
+    role: Role;
+    content: string;
+};
+
+export default function HomePage() {
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [input, setInput] = useState("");
+    const [personality, setPersonality] = useState<Personality>("default");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    async function handleSubmit(e: FormEvent) {
+        e.preventDefault();
+        if (!input.trim() || loading) return;
+
+        const newMessage: ChatMessage = {
+            role: "user",
+            content: input.trim(),
+        };
+
+        const updatedMessages = [...messages, newMessage];
+        setMessages(updatedMessages);
+        setInput("");
+        setError(null);
+        setLoading(true);
+
+        try {
+            const res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    messages: updatedMessages,
+                    personality,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                throw new Error(data.error || "Fehler bei der Anfrage.");
+            }
+
+            const aiMessage: ChatMessage = {
+                role: "assistant",
+                content: data.message,
+            };
+
+            setMessages((prev) => [...prev, aiMessage]);
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message || "Unerwarteter Fehler.");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    function handlePersonalityChange(p: Personality) {
+        if (loading) return;
+        setPersonality(p);
+        // Optional: Chat leeren beim Wechsel
+        // setMessages([]);
+    }
+
+    return (
+        <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
+            {/* Hintergrund-Gradient + Glow */}
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.35),_transparent_60%),radial-gradient(circle_at_bottom,_rgba(168,85,247,0.45),_transparent_60%)]" />
+            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-3xl" />
+
+            {/* Layout-Container als Grid statt flex */}
+            <div className="relative z-10 mx-auto grid w-full max-w-6xl gap-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-start">
+                {/* Linke Seite: Hero / Info */}
+                <section className="flex flex-col justify-between gap-6">
+                    <div>
+                        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-slate-900/70 px-3 py-1 text-xs font-medium text-cyan-200">
+                            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                            Live · Gemini 2.5 Flash
+                        </div>
+
+                        <h1 className="mb-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+                            Dein{" "}
+                            <span className="bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
+                DSAI-Assistent
+              </span>
+                            <br />
+                            direkt im Browser.
+                        </h1>
+
+                        <p className="max-w-xl text-sm text-slate-300 sm:text-base">
+                            Wechsle zwischen{" "}
+                            <span className="font-semibold text-cyan-300">
+                Allround-Chat
+              </span>
+                            ,{" "}
+                            <span className="font-semibold text-emerald-300">David</span> und{" "}
+                            <span className="font-semibold text-violet-300">
+                Code-Experte
+              </span>
+                            . Die eigentliche Intelligenz läuft serverseitig über deine
+                            Gemini-API.
+                        </p>
+                    </div>
+
+                    <div className="mt-4 space-y-2 text-xs text-slate-400">
+                        <p className="font-medium text-slate-300">
+                            Wähle deine Persönlichkeit:
+                        </p>
+                        <div className="inline-flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={() => handlePersonalityChange("default")}
+                                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                                    personality === "default"
+                                        ? "bg-cyan-400 text-slate-950 shadow-md shadow-cyan-400/40"
+                                        : "bg-slate-800/80 text-slate-200 hover:bg-slate-700/80"
+                                }`}
+                            >
+                                🧠 Allround
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handlePersonalityChange("david")}
+                                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                                    personality === "david"
+                                        ? "bg-emerald-400 text-slate-950 shadow-md shadow-emerald-400/40"
+                                        : "bg-slate-800/80 text-slate-200 hover:bg-slate-700/80"
+                                }`}
+                            >
+                                💬 David
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handlePersonalityChange("ardy")}
+                                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                                    personality === "ardy"
+                                        ? "bg-violet-400 text-slate-950 shadow-md shadow-violet-400/40"
+                                        : "bg-slate-800/80 text-slate-200 hover:bg-slate-700/80"
+                                }`}
+                            >
+                                👨‍💻 Ardy
+                            </button>
+                        </div>
+
+                        <p className="text-[11px] text-slate-500">
+                            Die Persönlichkeit steuert nur den System-Prompt (über deine ENV
+                            Variablen).
+                        </p>
+                    </div>
+                </section>
+
+                {/* Rechte Seite: Chat Card */}
+                <section className="flex">
+                    <div className="flex h-[520px] w-full flex-col overflow-hidden rounded-3xl border border-slate-800/80 bg-slate-900/70 shadow-2xl shadow-slate-950/80 backdrop-blur-xl">
+                        {/* Header */}
+                        <div className="flex items-center justify-between border-b border-slate-800/80 px-4 py-3">
+                            <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-emerald-400" />
+                                <p className="text-xs font-medium text-slate-200">DSAI · Chat</p>
+                            </div>
+                            <span className="rounded-full bg-slate-800 px-2 py-1 text-[10px] uppercase tracking-wide text-slate-400">
+                Beta
+              </span>
+                        </div>
+
+                        {/* Messages */}
+                        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 text-sm">
+                            {messages.length === 0 && (
+                                <div className="mt-10 rounded-2xl border border-dashed border-slate-700 bg-slate-900/70 p-4 text-xs text-slate-400">
+                                    <p className="mb-2 font-medium text-slate-300">
+                                        Starte eine Unterhaltung ✨
+                                    </p>
+                                    <ul className="list-inside list-disc space-y-1">
+                                        <li>Frag nach Hilfe bei deinem Studium oder Code.</li>
+                                        <li>Lass dich vom Coach motivieren oder reflektieren.</li>
+                                        <li>
+                                            Nutze den Coder-Modus für konkrete Implementierungen.
+                                        </li>
+                                    </ul>
+                                </div>
+                            )}
+
+                            {messages.map((msg, index) => {
+                                const isUser = msg.role === "user";
+                                return (
+                                    <div
+                                        key={index}
+                                        className={`flex w-full ${
+                                            isUser ? "justify-end" : "justify-start"
+                                        }`}
+                                    >
+                                        <div
+                                            className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs sm:text-sm ${
+                                                isUser
+                                                    ? "bg-cyan-500 text-slate-950 rounded-br-sm"
+                                                    : "bg-slate-800/90 text-slate-100 rounded-bl-sm border border-slate-700/80"
+                                            }`}
+                                        >
+                                            {msg.content}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {loading && (
+                                <div className="flex justify-start">
+                                    <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm border border-slate-700/80 bg-slate-800/90 px-3 py-2 text-xs text-slate-300">
+                                        <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-300" />
+                                        Denken...
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Error */}
+                        {error && (
+                            <div className="border-t border-red-500/40 bg-red-950/40 px-4 py-2 text-[11px] text-red-200">
+                                {error}
+                            </div>
+                        )}
+
+                        {/* Input */}
+                        <form
+                            onSubmit={handleSubmit}
+                            className="border-t border-slate-800/80 bg-slate-950/70 px-3 py-3"
+                        >
+                            <div className="flex items-end gap-2">
+                <textarea
+                    rows={1}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Schreibe eine Nachricht..."
+                    className="max-h-32 flex-1 resize-none rounded-2xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-sm text-slate-100 outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/40"
+                />
+                                <button
+                                    type="submit"
+                                    disabled={loading || !input.trim()}
+                                    className="inline-flex items-center gap-1 rounded-2xl bg-gradient-to-r from-cyan-400 to-violet-400 px-4 py-2 text-xs font-semibold text-slate-950 shadow-lg shadow-cyan-500/40 transition disabled:cursor-not-allowed disabled:opacity-50 hover:brightness-110"
+                                >
+                                    {loading ? (
+                                        <span className="text-[11px]">Senden...</span>
+                                    ) : (
+                                        <>
+                                            <span>Senden</span>
+                                            <span className="text-[11px]">↵</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </main>
+    );
 }
