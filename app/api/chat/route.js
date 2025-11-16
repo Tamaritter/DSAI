@@ -53,15 +53,14 @@ export async function POST(request) {
         }
 
         // 4. Bereite die Anfrage an Gemini vor
-        const geminiContents = messages.map((msg) => {
-            return {
-                role: msg.role === "assistant" ? "model" : "user", // Wandle 'assistant' zu 'model' um
-                parts: [{ text: msg.content }],
-            };
-        });
+        const geminiContents = messages.map((msg) => ({
+            role: msg.role === "assistant" ? "model" : "user",
+            parts: [{ text: msg.content }],
+        }));
 
-        // Entferne die ersten Nachrichten, wenn sie die Standard-Begrüßung sind
-        const contentsPayload = geminiContents.slice(2);
+// Nur slicen, wenn wirklich alte Begrüßungsnachrichten existieren
+        const contentsPayload =
+            geminiContents.length > 2 ? geminiContents.slice(2) : geminiContents;
 
         const payload = {
             contents: contentsPayload,

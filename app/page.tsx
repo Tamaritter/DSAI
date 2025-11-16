@@ -105,8 +105,6 @@ export default function HomePage() {
                             <span className="font-semibold text-violet-300">
                 Code-Experte
               </span>
-                            . Die eigentliche Intelligenz läuft serverseitig über deine
-                            Gemini-API.
                         </p>
                     </div>
 
@@ -149,11 +147,6 @@ export default function HomePage() {
                                 👨‍💻 Ardy
                             </button>
                         </div>
-
-                        <p className="text-[11px] text-slate-500">
-                            Die Persönlichkeit steuert nur den System-Prompt (über deine ENV
-                            Variablen).
-                        </p>
                     </div>
                 </section>
 
