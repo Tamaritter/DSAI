@@ -35,7 +35,7 @@ try {
 
 const appId = typeof window !== 'undefined' && (window as any).__app_id ? (window as any).__app_id : 'default-app-id';
 
-let app, auth, db;
+let app: any, auth: any, db: any;
 const isFirebaseConfigured = firebaseConfig && firebaseConfig.apiKey;
 
 if (isFirebaseConfigured) {
