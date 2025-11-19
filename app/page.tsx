@@ -1,10 +1,10 @@
-// app/page.tsx
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 
 type Role = "user" | "assistant";
-type Personality = "default" | "david" | "ardy";
+// "custom" als Option hinzugefügt
+type Personality = "default" | "david" | "ardy" | "custom";
 
 type ChatMessage = {
     role: Role;
@@ -15,8 +15,26 @@ export default function HomePage() {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState("");
     const [personality, setPersonality] = useState<Personality>("default");
+
+    // Neuer State für den Custom Prompt
+    const [customPrompt, setCustomPrompt] = useState("");
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Beim Laden: Prüfen, ob ein Custom Prompt im LocalStorage liegt
+    useEffect(() => {
+        const savedPrompt = localStorage.getItem("dsai_custom_prompt");
+        if (savedPrompt) {
+            setCustomPrompt(savedPrompt);
+        }
+    }, []);
+
+    // Speichert den Custom Prompt bei jeder Änderung im LocalStorage
+    const handleCustomPromptChange = (val: string) => {
+        setCustomPrompt(val);
+        localStorage.setItem("dsai_custom_prompt", val);
+    };
 
     async function handleSubmit(e: FormEvent | KeyboardEvent) {
         e.preventDefault?.();
@@ -40,6 +58,8 @@ export default function HomePage() {
                 body: JSON.stringify({
                     messages: updatedMessages,
                     personality,
+                    // Sende den Custom Prompt nur mit, wenn der Modus aktiv ist
+                    customSystemPrompt: personality === "custom" ? customPrompt : undefined
                 }),
             });
 
@@ -55,7 +75,7 @@ export default function HomePage() {
             };
 
             setMessages((prev) => [...prev, aiMessage]);
-        } catch (err: any) {
+        } catch (err: never) {
             console.error(err);
             setError(err.message || "Unerwarteter Fehler.");
         } finally {
@@ -67,7 +87,7 @@ export default function HomePage() {
     function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            handleSubmit(e as any);
+            handleSubmit(e as never);
         }
     }
 
@@ -94,8 +114,8 @@ export default function HomePage() {
                         <h1 className="mb-4 text-4xl font-semibold tracking-tight sm:text-5xl">
                             Dein{" "}
                             <span className="bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
-                DSAI-Assistent
-              </span>
+                                DSAI-Assistent
+                            </span>
                             <br />
                             direkt im Browser.
                         </h1>
@@ -103,47 +123,74 @@ export default function HomePage() {
                         <p className="max-w-2xl text-sm text-slate-300 sm:text-base">
                             Wechsle zwischen{" "}
                             <span className="font-semibold text-cyan-300">Allround</span>,{" "}
-                            <span className="font-semibold text-emerald-300">David</span> und{" "}
-                            <span className="font-semibold text-violet-300">Ardy</span>.
+                            <span className="font-semibold text-emerald-300">David</span>,{" "}
+                            <span className="font-semibold text-violet-300">Ardy</span> oder{" "}
+                            <span className="font-semibold text-amber-300">Eigenem Prompt</span>.
                         </p>
                     </div>
 
                     <div className="mt-2 space-y-2 text-xs text-slate-400">
                         <p className="font-medium text-slate-300">Wähle deine Persönlichkeit:</p>
 
-                        <div className="inline-flex flex-wrap gap-2">
-                            <button
-                                onClick={() => handlePersonalityChange("default")}
-                                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                                    personality === "default"
+                        <div className="flex flex-col gap-4">
+                            {/* Button Group */}
+                            <div className="inline-flex flex-wrap gap-2">
+                                <button
+                                    onClick={() => handlePersonalityChange("default")}
+                                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${personality === "default"
                                         ? "bg-cyan-400 text-slate-950 shadow-md shadow-cyan-400/40"
                                         : "bg-slate-800/80 text-slate-200 hover:bg-slate-700/80"
-                                }`}
-                            >
-                                🧠 Allround
-                            </button>
+                                    }`}
+                                >
+                                    🧠 Allround
+                                </button>
 
-                            <button
-                                onClick={() => handlePersonalityChange("david")}
-                                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                                    personality === "david"
+                                <button
+                                    onClick={() => handlePersonalityChange("david")}
+                                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${personality === "david"
                                         ? "bg-emerald-400 text-slate-950 shadow-md shadow-emerald-400/40"
                                         : "bg-slate-800/80 text-slate-200 hover:bg-slate-700/80"
-                                }`}
-                            >
-                                💬 David
-                            </button>
+                                    }`}
+                                >
+                                    💬 David
+                                </button>
 
-                            <button
-                                onClick={() => handlePersonalityChange("ardy")}
-                                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                                    personality === "ardy"
+                                <button
+                                    onClick={() => handlePersonalityChange("ardy")}
+                                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${personality === "ardy"
                                         ? "bg-violet-400 text-slate-950 shadow-md shadow-violet-400/40"
                                         : "bg-slate-800/80 text-slate-200 hover:bg-slate-700/80"
-                                }`}
-                            >
-                                👨‍💻 Ardy
-                            </button>
+                                    }`}
+                                >
+                                    👨‍💻 Ardy
+                                </button>
+
+                                <button
+                                    onClick={() => handlePersonalityChange("custom")}
+                                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${personality === "custom"
+                                        ? "bg-amber-400 text-slate-950 shadow-md shadow-amber-400/40"
+                                        : "bg-slate-800/80 text-slate-200 hover:bg-slate-700/80"
+                                    }`}
+                                >
+                                    ⚙️ Custom
+                                </button>
+                            </div>
+
+                            {/* Custom Prompt Editor Area - Nur sichtbar wenn 'custom' aktiv */}
+                            {personality === "custom" && (
+                                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <textarea
+                                        value={customPrompt}
+                                        onChange={(e) => handleCustomPromptChange(e.target.value)}
+                                        placeholder="Schreibe hier deinen eigenen System-Prompt (z.B. 'Du bist ein zynischer Pirat')..."
+                                        className="w-full max-w-2xl rounded-xl border border-amber-500/30 bg-slate-900/80 p-3 text-xs text-slate-200 shadow-lg shadow-amber-900/10 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50"
+                                        rows={3}
+                                    />
+                                    <p className="mt-1 text-[10px] text-slate-500">
+                                        Dieser Prompt wird automatisch gespeichert.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </section>
@@ -154,13 +201,15 @@ export default function HomePage() {
                         {/* Header */}
                         <div className="flex items-center justify-between border-b border-slate-800/80 px-4 py-3">
                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-emerald-400" />
-                                <p className="text-xs font-medium text-slate-200">DSAI · Chat</p>
+                                <div className={`h-2 w-2 rounded-full ${personality === 'custom' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                                <p className="text-xs font-medium text-slate-200">
+                                    DSAI · {personality === "default" ? "Allround" : personality === "custom" ? "Custom" : personality.charAt(0).toUpperCase() + personality.slice(1)}
+                                </p>
                             </div>
 
                             <span className="rounded-full bg-slate-800 px-2 py-1 text-[10px] uppercase tracking-wide text-slate-400">
-                Beta
-              </span>
+                                Beta
+                            </span>
                         </div>
 
                         {/* Messages */}
@@ -174,6 +223,9 @@ export default function HomePage() {
                                         <li>Frag nach Hilfe bei deinem Studium oder Code.</li>
                                         <li>David hilft beim Reflektieren.</li>
                                         <li>Ardy liefert konkrete Implementierungen.</li>
+                                        {personality === "custom" && (
+                                            <li className="text-amber-200/80">Custom Mode nutzt deinen eigenen Prompt.</li>
+                                        )}
                                     </ul>
                                 </div>
                             )}
@@ -186,10 +238,9 @@ export default function HomePage() {
                                         className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}
                                     >
                                         <div
-                                            className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs sm:text-sm ${
-                                                isUser
-                                                    ? "bg-cyan-500 text-slate-950 rounded-br-sm"
-                                                    : "bg-slate-800/90 text-slate-100 rounded-bl-sm border border-slate-700/80"
+                                            className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs sm:text-sm ${isUser
+                                                ? "bg-cyan-500 text-slate-950 rounded-br-sm"
+                                                : "bg-slate-800/90 text-slate-100 rounded-bl-sm border border-slate-700/80"
                                             }`}
                                         >
                                             {msg.content}
@@ -221,14 +272,14 @@ export default function HomePage() {
                             className="border-t border-slate-800/80 bg-slate-950/70 px-3 py-3"
                         >
                             <div className="flex items-end gap-2">
-                <textarea
-                    rows={1}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Schreibe eine Nachricht…"
-                    className="max-h-32 flex-1 resize-none rounded-2xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-sm text-slate-100 outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/40"
-                />
+                                <textarea
+                                    rows={1}
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder="Schreibe eine Nachricht…"
+                                    className="max-h-32 flex-1 resize-none rounded-2xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-sm text-slate-100 outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/40"
+                                />
 
                                 <button
                                     type="submit"

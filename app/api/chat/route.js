@@ -1,4 +1,3 @@
-// app/api/chat/route.js
 import { NextResponse } from "next/server";
 
 const GEMINI_API_URL =
@@ -11,23 +10,22 @@ const PERSONALITIES = {
     ardy: "SYSTEM_PROMPT_ARDY",
 };
 
-// Dies ist die Hauptfunktion, die Vercel (bzw. Next.js) bei POST /api/chat aufruft.
 export async function POST(request) {
     try {
-        // 1. Hole den geheimen API-Schlüssel aus den Vercel Environment Variables
         const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
-            console.error("Gemini API key is not set in environment variables.");
+            console.error("Gemini API key is not set.");
             return NextResponse.json(
                 { error: "API key is not configured." },
                 { status: 500 }
             );
         }
 
-        // 2. Hole die Chat-Historie und die Persönlichkeit aus der Anfrage des Frontends
+        // 1. Daten aus dem Request holen
         const body = await request.json();
-        const { messages, personality } = body || {};
+        // Wir holen zusätzlich 'customSystemPrompt' aus dem Body
+        const { messages, personality, customSystemPrompt } = body || {};
 
         if (!messages) {
             return NextResponse.json(
@@ -36,29 +34,32 @@ export async function POST(request) {
             );
         }
 
-        // 3. Wähle den richtigen System-Prompt basierend auf der Persönlichkeit aus
-        const personalityKey = personality || "default"; // Fallback auf 'default'
-        const systemPromptEnvVar =
-            PERSONALITIES[personalityKey] || PERSONALITIES["default"];
-        const systemPrompt = process.env[systemPromptEnvVar];
+        // 2. System Prompt Logik
+        let systemPrompt = "";
 
-        if (!systemPrompt) {
-            console.error(
-                `System prompt for personality '${personalityKey}' (env var ${systemPromptEnvVar}) is not set.`
-            );
-            return NextResponse.json(
-                { error: `System prompt for '${personalityKey}' is not configured.` },
-                { status: 500 }
-            );
+        // WICHTIG: Wenn personality 'custom' ist und ein Text da ist, nimm diesen.
+        if (personality === "custom" && customSystemPrompt) {
+            systemPrompt = customSystemPrompt;
+        } else {
+            // Ansonsten Standard-Logik mit Umgebungsvariablen
+            const personalityKey = personality || "default";
+            // Fallback auf default, falls der Key nicht existiert (z.B. bei Manipulation)
+            const validKey = PERSONALITIES[personalityKey] ? personalityKey : "default";
+            const systemPromptEnvVar = PERSONALITIES[validKey];
+            systemPrompt = process.env[systemPromptEnvVar];
         }
 
-        // 4. Bereite die Anfrage an Gemini vor
+        // Fallback, falls gar nichts gefunden wurde (weder Env noch Custom)
+        if (!systemPrompt) {
+            systemPrompt = "Du bist ein hilfreicher Assistent.";
+        }
+
+        // 3. Anfrage vorbereiten
         const geminiContents = messages.map((msg) => ({
             role: msg.role === "assistant" ? "model" : "user",
             parts: [{ text: msg.content }],
         }));
 
-// Nur slicen, wenn wirklich alte Begrüßungsnachrichten existieren
         const contentsPayload =
             geminiContents.length > 2 ? geminiContents.slice(2) : geminiContents;
 
@@ -72,12 +73,10 @@ export async function POST(request) {
             },
         };
 
-        // 5. Rufe die Gemini-API sicher vom Server aus auf
+        // 4. Fetch zu Gemini
         const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
 
@@ -85,15 +84,9 @@ export async function POST(request) {
             let errorData = {};
             try {
                 errorData = await geminiResponse.json();
-            } catch {
-                // ignore
-            }
-            console.error("Gemini API Error:", errorData);
+            } catch { }
             return NextResponse.json(
-                {
-                    error:
-                        errorData?.error?.message || "Gemini API request failed",
-                },
+                { error: errorData?.error?.message || "Gemini API request failed" },
                 { status: geminiResponse.status }
             );
         }
@@ -108,7 +101,6 @@ export async function POST(request) {
             );
         }
 
-        // 6. Sende die reine Text-Antwort zurück an das Frontend
         return NextResponse.json({ message: aiMessage }, { status: 200 });
     } catch (error) {
         console.error("Internal Server Error:", error);
