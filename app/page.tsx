@@ -280,7 +280,7 @@ export default function HomePage() {
                     <div>
                         <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-slate-900/70 px-3 py-1 text-xs font-medium text-cyan-200">
                             <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                            Live · Gemini 2.5 Flash · Community Edition
+                            Live · Gemini 2.5 Flash (Stable) · Community Edition
                         </div>
                         <h1 className="mb-4 text-4xl font-semibold tracking-tight sm:text-5xl">
                             Dein <span className="bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">DSAI-Assistent</span>
